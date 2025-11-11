@@ -1,0 +1,42 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Setup .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 9.0.x
+
+      # Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore ./URLShortenMVC/URLShortenMVC.sln
+
+      # Build project
+      - name: Build
+        run: dotnet build --configuration Release --no-restore ./URLShortenMVC/URLShortenMVC.sln
+      # Run tests
+      - name: Test
+        run: dotnet test --no-build --verbosity normal ./URLShortenMVC/URLShortenMVC.sln
+
+      # Upload artifacts
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: URLShortenerBuild
+          path: ./URLShortenMVC/URLShortenMVC.sln/bin/Debug/
