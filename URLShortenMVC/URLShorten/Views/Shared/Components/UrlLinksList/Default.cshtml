@@ -1,0 +1,64 @@
+﻿@model IEnumerable<URLShorten.Data.Entities.UrlLink>
+@{
+    var isEditPage = ViewBag.IsEditPage as bool? ?? false;
+}
+
+@if (Model != null && Model.Any())
+{
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th scope="col">Shortened URL</th>
+                <th scope="col">Original URL</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        <a href="@item.ShortenedUrl" target="_blank">
+                            @item.ShortenedUrl
+                        </a>
+                    </td>
+                    <td>
+                        <a href="@item.OriginalUrl" target="_blank">
+                            @item.OriginalUrl
+                        </a>
+                    </td>
+                    <td>
+                        <div class="d-flex">
+                            @if (isEditPage)
+                            {
+                                <!-- Chỉ hiện nút Delete ở trang Edit -->
+                                <button type="button"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="openModalDeleteUrlLink(@item.Id)"
+                                        title="Delete">
+                                    Delete
+                                </button>
+                            }
+                            else
+                            {
+                                <!-- Chỉ hiện nút Report ở trang Create -->
+                                <button type="button"
+                                        class="btn btn-warning btn-sm"
+                                        onclick="openModalReportUrlLink(@item.Id)"
+                                        title="Report">
+                                    Report
+                                </button>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info text-center">
+        No shortened URLs found.
+    </div>
+}

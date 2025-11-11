@@ -1,0 +1,139 @@
+﻿@model IEnumerable<URLShorten.Data.Entities.UrlLink>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+@* <p>
+    <a asp-action="Create">Create New</a>
+</p> *@
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.OriginalUrl)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ShortenedUrl)
+            </th>
+            @* <th>
+                @Html.DisplayNameFor(model => model.CustomAlias)
+            </th> *@
+            <th>
+                @Html.DisplayNameFor(model => model.CreatedDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ClickCount)
+            </th>
+            @* <th>
+                @Html.DisplayNameFor(model => model.IsActive)
+            </th> *@
+            @* <th>
+                @Html.DisplayNameFor(model => model.Action)
+            </th> *@
+            <th scope="col">Actions</th>
+
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.OriginalUrl)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ShortenedUrl)
+            </td>
+            @* <td>
+                @Html.DisplayFor(modelItem => item.CustomAlias)
+            </td> *@
+            <td>
+                @Html.DisplayFor(modelItem => item.CreatedDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ClickCount)
+            </td>
+            @* <td>
+                @Html.DisplayFor(modelItem => item.IsActive)
+            </td> *@
+            @* <td>
+                @Html.DisplayFor(modelItem => item.User.DisplayName)
+            </td> *@
+            <td>
+                    <a asp-action="Edit" class="btn btn-primary" asp-route-id="@item.Id">Edit</a> |
+                    @* <a href="javascript:void(0);" class="btn btn-outline-primary btn-sm" onclick="openModalDetails(@item.Id)">Details</a> *@
+                    <a href="javascript:void(0);" class="btn btn-danger btn-sm" onclick="openModalDeleteUrlLink(@item.Id)">Delete</a>
+            </td>
+                
+        </tr>
+}
+    </tbody>
+</table>
+
+<div class="modal fade" id="ajaxModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ajaxModalTitle"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeModal()"></button>
+      </div>
+      <div class="modal-body" id="ajaxModalBody"></div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+    function openModal(title, bodyHtml) {
+        document.getElementById('ajaxModalTitle').innerText = title;
+        document.getElementById('ajaxModalBody').innerHTML = bodyHtml;
+        var modalEl = new bootstrap.Modal(document.getElementById('ajaxModal'));
+        modalEl.show();
+    }
+    function closeModal() {
+        var modalEl = bootstrap.Modal.getInstance(document.getElementById('ajaxModal'));
+        if (modalEl) modalEl.hide();
+    }
+
+    function openModalDeleteUrlLink(id) {
+        $.ajax({
+            url: "/UrlLinks/Delete",
+            type: "GET",
+            data: { id: id },
+            success: function(response) {
+                openModal("Delete UrlLink", response);
+            },
+            error: function() {
+                alert("Unable to load delete dialog.");
+            }
+        });
+    }
+
+    function deleteUrlLink(id) {
+        var tokenInput = document.querySelector("#ajaxModalBody input[name='__RequestVerificationToken']")
+                         || document.querySelector("input[name='__RequestVerificationToken']");
+        var token = tokenInput ? tokenInput.value : "";
+
+        $.ajax({
+            url: "/UrlLinks/Delete",
+            type: "POST",
+            data: {
+                id: id,
+                __RequestVerificationToken: token
+            },
+            success: function(response) {
+                if (response && response.isOK) {
+                    location.reload(); // hoặc reload lại bảng nếu dùng AJAX
+                } else {
+                    location.reload();
+                }
+            },
+            error: function() {
+                alert("Delete failed.");
+            }
+        });
+    }
+</script>
+}

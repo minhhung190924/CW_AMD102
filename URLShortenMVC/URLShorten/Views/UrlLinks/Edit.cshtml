@@ -1,0 +1,173 @@
+﻿@model URLShorten.Data.Entities.UrlLink
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>UrlLink</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="OriginalUrl" class="control-label"></label>
+                <input asp-for="OriginalUrl" class="form-control" />
+                <span asp-validation-for="OriginalUrl" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ShortenedUrl" class="control-label"></label>
+                <input asp-for="ShortenedUrl" class="form-control" id="shortenedUrlInput" readonly />
+                <span asp-validation-for="ShortenedUrl" class="text-danger"></span>
+            </div>
+            @* <div class="form-group">
+                <label asp-for="CustomAlias" class="control-label"></label>
+                <input asp-for="CustomAlias" class="form-control" />
+                <span asp-validation-for="CustomAlias" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CreatedDate" class="control-label"></label>
+                <input asp-for="CreatedDate" class="form-control" />
+                <span asp-validation-for="CreatedDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ClickCount" class="control-label"></label>
+                <input asp-for="ClickCount" class="form-control" />
+                <span asp-validation-for="ClickCount" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
+                </label>
+            </div>
+            <div class="form-group">
+                <label asp-for="UserId" class="control-label"></label>
+                <select asp-for="UserId" class="form-control" asp-items="ViewBag.UserId"></select>
+                <span asp-validation-for="UserId" class="text-danger"></span>
+            </div> *@
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+
+    <!-- Right: reuse UrlLinksList component (same as Create page) -->
+    <div class="col-md-8" id="linksListContainer">
+        @await Component.InvokeAsync("UrlLinksList", new { isEditPage = true })
+        <a class="btn btn-primary" asp-action="Index">Back to List</a>
+    </div>
+</div>
+
+@* <div>
+    <a asp-action="Index">Back to List</a>
+</div> *@
+
+<!-- Bootstrap modal used to show server-provided Delete view -->
+<div class="modal fade" id="ajaxModal" tabindex="-1" aria-hidden="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ajaxModalTitle"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeModal()"></button>
+      </div>
+      <div class="modal-body" id="ajaxModalBody"></div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        // Modal helpers (Bootstrap 5)
+        function openModal(title, bodyHtml) {
+            document.getElementById('ajaxModalTitle').innerText = title;
+            document.getElementById('ajaxModalBody').innerHTML = bodyHtml;
+            var modalEl = new bootstrap.Modal(document.getElementById('ajaxModal'));
+            modalEl.show();
+        }
+        function closeModal() {
+            var modalEl = bootstrap.Modal.getInstance(document.getElementById('ajaxModal'));
+            if (modalEl) modalEl.hide();
+        }
+
+        // Load delete partial into modal (GET)
+        function openModalDeleteUrlLink(id) {
+            $.ajax({
+                url: "/UrlLinks/Delete",
+                type: "GET",
+                data: { id: id },
+                beforeSend: function() { console.log("Requesting delete view..."); },
+                success: function(response) {
+                    openModal("Delete UrlLink", response);
+                    console.log("123")
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error loading delete view:", error);
+                    alert("Unable to load delete dialog.");
+                }
+            });
+        }
+
+        // Called from Delete partial (button) to perform delete via POST
+        function deleteUrlLink(id) {
+            // get antiforgery token from modal or page
+            var tokenInput = document.querySelector("#ajaxModalBody input[name='__RequestVerificationToken']") 
+                             || document.querySelector("input[name='__RequestVerificationToken']");
+            var token = tokenInput ? tokenInput.value : "";
+
+            $.ajax({
+                url: "/UrlLinks/Delete",
+                type: "POST",
+                data: {
+                    id: id,
+                    __RequestVerificationToken: token
+                },
+                beforeSend: function() { console.log("Sending delete..."); },
+                success: function(response) {
+                    if (response && response.isOK) {
+                        if (response.redirectToCreate) {
+                            // Nếu không còn link nào, chuyển về trang Create
+                            window.location.href = '/UrlLinks/Create';
+                            return;
+                        }
+                        // reload list fragment và đóng modal như cũ
+                        $.ajax({
+                            url: "/UrlLinks/ReloadList",
+                            type: "GET",
+                            success: function(html) {
+                                $("#linksListContainer").html(html);
+                                closeModal();
+                            },
+                            error: function() {
+                                alert("Failed reloading list");
+                                closeModal();
+                            }
+                        });
+                    } else {
+                        // fallback: refresh page
+                        location.reload();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Delete failed:", error, xhr.responseText);
+                    alert("Delete failed: " + (xhr.responseText || error));
+                }
+            });
+        }
+
+        // Also handle delete buttons that use data-id + class (if any)
+        document.getElementById('linksListContainer').addEventListener('click', function (e) {
+            var btn = e.target.closest('.deleteBtn');
+            if (!btn) return;
+            var id = btn.getAttribute('data-id');
+            if (!id) return;
+            // open modal confirmation first (reuse same flow)
+            openModalDeleteUrlLink(id);
+        });
+    </script>
+}
